@@ -3,7 +3,7 @@ on:
     tags:
     - 'v*'
 
-name: Create release and build artifacts
+name: skypool
 
 jobs:
   build_win:
