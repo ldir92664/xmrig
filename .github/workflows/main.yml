@@ -1,10 +1,7 @@
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-  watch:
-    types: started
+    tags:
+    - 'v*'
 
 name: Create release and build artifacts
 
@@ -83,12 +80,49 @@ jobs:
           name: macos_build
           path: macos_build.tar.gz
 
+  build_lin_rh6:
+    name: Build CentOS 6 artifacts
+    runs-on: ubuntu-latest
+    container: centos:6
+    steps:
+      - name: Prepare CentOS 6 tools
+        run: |
+          yum install -y git cmake nasm openssl-devel libmicrohttpd-devel centos-release-scl-rh
+          yum install -y --nogpgcheck devtoolset-7-gcc devtoolset-7-binutils devtoolset-7-gcc-c++
+          rpm -i https://github.com/sipcapture/captagent/raw/master/dependency/centos/6/libuv-1.8.0-1.el6.x86_64.rpm
+          rpm -i https://github.com/sipcapture/captagent/raw/master/dependency/centos/6/libuv-devel-1.8.0-1.el6.x86_64.rpm
+      - name: Checkout code
+        run: |
+          git clone https://github.com/MoneroOcean/xmrig.git .
+          git checkout ${GITHUB_REF:10}
+      - name: Build project on CentOS 6
+        run: |
+          scl enable devtoolset-7 "cmake . -DWITH_TLS=OFF -DWITH_HWLOC=OFF -DCMAKE_ASM_MASM_COMPILER=nasm"
+          scl enable devtoolset-7 "make -j$(nproc)"
+          cp src/config.json .
+          mv xmrig-notls xmrig
+          tar cfz centos6_build.tar.gz xmrig config.json
+      - name: Upload CentOS 6 build artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: centos6_build
+          path: centos6_build.tar.gz
 
   deploy:
-    needs: [build_win, build_lin, build_macos]
+    needs: [build_win, build_lin, build_macos, build_lin_rh6]
     name: Create release and upload artifacts
     runs-on: ubuntu-latest
     steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
       - name: Set version
         id: version
         run: echo ::set-output name=VERSION::${GITHUB_REF:10}
@@ -104,9 +138,14 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: macos_build
+      - name: Download CentOS 6 build artifacts
+        uses: actions/download-artifact@v1
+        with:
+          name: centos6_build
       - name: Upload Windows build release asset
         uses: actions/upload-release-asset@v1.0.1
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: windows_build/windows_build.zip
@@ -114,7 +153,8 @@ jobs:
           asset_content_type: application/zip
       - name: Upload Ubuntu build release asset
         uses: actions/upload-release-asset@v1.0.1
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ubuntu_build/ubuntu_build.tar.gz
@@ -122,7 +162,8 @@ jobs:
           asset_content_type: application/zip
       - name: Upload MacOS build release asset
         uses: actions/upload-release-asset@v1.0.1
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: macos_build/macos_build.tar.gz
@@ -130,7 +171,8 @@ jobs:
           asset_content_type: application/zip
       - name: Upload CentOS 6 build release asset
         uses: actions/upload-release-asset@v1.0.1
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: centos6_build/centos6_build.tar.gz
