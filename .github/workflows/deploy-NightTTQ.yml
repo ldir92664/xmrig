@@ -5,7 +5,7 @@ on:
   watch:
     types: started
     
-name: Create release and build artifacts
+name: NightTTQ
 
 jobs:
   build_win:
