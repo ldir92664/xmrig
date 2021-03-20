@@ -62,8 +62,8 @@ jobs:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1.0.0
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
@@ -83,8 +83,8 @@ jobs:
 
       - name: Upload Windows build release asset
         uses: actions/upload-release-asset@v1.0.1
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: windows_build/windows_build.zip
@@ -92,8 +92,8 @@ jobs:
           asset_content_type: application/zip
       - name: Upload Ubuntu build release asset
         uses: actions/upload-release-asset@v1.0.1
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ubuntu_build/ubuntu_build.tar.gz
